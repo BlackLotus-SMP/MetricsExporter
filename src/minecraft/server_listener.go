@@ -1,7 +1,10 @@
 package minecraft
 
 import (
+	"context"
+	"encoding/json"
 	"metrics-exporter/src/logger"
+	"metrics-exporter/src/minecraft/packet"
 	"sync"
 	"time"
 )
@@ -12,6 +15,7 @@ type Listener struct {
 	interval int
 	mcAddr   string
 	mcPort   uint
+	metrics  *Response
 }
 
 func NewMCMetricsListener(interval int, mcAddr string, mcPort uint) *Listener {
@@ -24,6 +28,12 @@ func NewMCMetricsListener(interval int, mcAddr string, mcPort uint) *Listener {
 	return listener
 }
 
+func (l *Listener) GetMetrics() Response {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	return *l.metrics
+}
+
 func (l *Listener) Do() {
 	ticker := time.NewTicker(time.Duration(l.interval) * time.Second)
 	defer ticker.Stop()
@@ -33,7 +43,64 @@ func (l *Listener) Do() {
 		case <-done:
 			return
 		case <-ticker.C:
-			l.log.Info("aa")
+			l.collect()
 		}
 	}
+}
+
+func (l *Listener) collect() {
+	dialer := Dialer{}
+	conn, connErr := dialer.DialMCContext(context.Background(), l.mcAddr, l.mcPort)
+	if connErr != nil {
+		l.onError()
+		l.log.Critical("Unable to establish a valid connection to the server %s:%d", l.mcAddr, l.mcPort)
+		l.log.Critical(connErr.Error())
+		return
+	}
+	const Handshake = 0x00
+	pErr := conn.WritePacket(packet.Marshal(
+		Handshake,
+		packet.VarInt(762),
+		packet.String(l.mcAddr),
+		packet.UnsignedShort(l.mcPort),
+		packet.Byte(9),
+	))
+	if pErr != nil {
+		l.onError()
+		l.log.Critical("Unable to send the metrics packet to the server %s:%d", l.mcAddr, l.mcPort)
+		l.log.Critical(pErr.Error())
+		return
+	}
+	p2Err := conn.WritePacket(packet.Marshal(0))
+	if p2Err != nil {
+		l.onError()
+		l.log.Critical("Unable to send the metrics packet to the server %s:%d", l.mcAddr, l.mcPort)
+		l.log.Critical(pErr.Error())
+		return
+	}
+	var p packet.Packet
+	readErr := conn.ReadPacket(&p)
+	if readErr != nil {
+		l.onError()
+		l.log.Critical("Unable to read response")
+		l.log.Critical(readErr.Error())
+		return
+	}
+	var metrics Response
+	unmarshalErr := json.Unmarshal(p.Data[2:], &metrics)
+	if unmarshalErr != nil {
+		l.onError()
+		l.log.Critical("Unable to unmarshal!")
+		l.log.Critical(unmarshalErr.Error())
+		return
+	}
+	l.lock.Lock()
+	l.metrics = &metrics
+	l.lock.Unlock()
+}
+
+func (l *Listener) onError() {
+	l.lock.Lock()
+	l.metrics = nil
+	l.lock.Unlock()
 }
