@@ -13,23 +13,20 @@ type Server struct {
 
 func NewServer() *Server {
 	server := new(Server)
-	return server
-}
-
-func (s *Server) Init() {
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.New()
 	engine.Use(gin.LoggerWithWriter(gin.DefaultWriter, "/healthcheck"), gin.Recovery())
-	s.engine = engine
+	server.engine = engine
 	routes := Loader{}
 	for _, route := range routes.Load() {
-		route.Route(s.engine)
+		route.Route(server.engine)
 	}
+	return server
 }
 
 func (s *Server) Start(port string) {
-	logg := logger.NewLogger("API")
-	logg.Info("Listening on port :%s", port)
+	logg := logger.NewColorLogger("API")
+	logg.Info("Listening on 0.0.0.0:%s", port)
 	err := s.engine.Run(fmt.Sprintf("0.0.0.0:%s", port))
 	if err != nil {
 		log.Fatal(err)
