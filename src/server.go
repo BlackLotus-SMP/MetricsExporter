@@ -5,19 +5,20 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"metrics-exporter/src/logger"
+	"metrics-exporter/src/minecraft"
 )
 
 type Server struct {
 	engine *gin.Engine
 }
 
-func NewServer() *Server {
+func NewServer(metrics minecraft.MCMetrics) *Server {
 	server := new(Server)
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.New()
 	engine.Use(gin.LoggerWithWriter(gin.DefaultWriter, "/healthcheck"), gin.Recovery())
 	server.engine = engine
-	routes := Loader{}
+	routes := Loader{metrics}
 	for _, route := range routes.Load() {
 		route.Route(server.engine)
 	}

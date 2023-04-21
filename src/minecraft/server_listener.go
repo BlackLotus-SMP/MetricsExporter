@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+type MCMetrics interface {
+	GetMetrics() *Response
+}
+
 type Listener struct {
 	log      logger.Logger
 	lock     *sync.Mutex
@@ -28,16 +32,17 @@ func NewMCMetricsListener(interval int, mcAddr string, mcPort uint) *Listener {
 	return listener
 }
 
-func (l *Listener) GetMetrics() Response {
+func (l *Listener) GetMetrics() *Response {
 	l.lock.Lock()
 	defer l.lock.Unlock()
-	return *l.metrics
+	return l.metrics
 }
 
 func (l *Listener) Do() {
 	ticker := time.NewTicker(time.Duration(l.interval) * time.Second)
 	defer ticker.Stop()
 	done := make(chan bool)
+	l.collect()
 	for {
 		select {
 		case <-done:

@@ -20,6 +20,6 @@ func main() {
 	minecraftListener := minecraft.NewMCMetricsListener(*interval, *serverAddress, *serverPort)
 	go minecraftListenerPool.Start(minecraftListener)
 
-	server := src.NewServer()
+	server := src.NewServer(minecraftListener)
 	server.Start(*port)
 }
