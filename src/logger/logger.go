@@ -24,7 +24,7 @@ type ColorLogger struct {
 	Name string
 }
 
-func NewLogger(name string) ColorLogger {
+func NewColorLogger(name string) ColorLogger {
 	return ColorLogger{Name: name}
 }
 
