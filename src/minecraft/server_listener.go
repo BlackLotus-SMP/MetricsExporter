@@ -11,10 +11,10 @@ type Listener struct {
 	lock     *sync.Mutex
 	interval int
 	mcAddr   string
-	mcPort   int
+	mcPort   uint
 }
 
-func NewMCMetricsListener(interval int, mcAddr string, mcPort int) *Listener {
+func NewMCMetricsListener(interval int, mcAddr string, mcPort uint) *Listener {
 	listener := new(Listener)
 	listener.log = logger.NewColorLogger("MinecraftMetrics")
 	listener.lock = &sync.Mutex{}

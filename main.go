@@ -11,8 +11,8 @@ func main() {
 	var port = flag.String("p", "8462", "Service port")
 	var interval = flag.Int("interval", 15, "Every how many seconds the service will collect metrics from the minecraft server")
 	var serverAddress = flag.String("mcAddress", "127.0.0.1", "The minecraft server address (just ip/dns)")
-	var serverPort = flag.Int("mcPort", 25565, "The minecraft server port")
-	if *serverPort < 0 || *serverPort > 65535 {
+	var serverPort = flag.Uint("mcPort", 25565, "The minecraft server port")
+	if *serverPort < 0 || *serverPort > 65536 {
 		panic("Invalid minecraft server port!")
 	}
 
