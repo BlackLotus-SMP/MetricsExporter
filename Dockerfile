@@ -16,4 +16,4 @@ EXPOSE 8855
 COPY --from=builder /go/src/app/metrics /go/bin/metrics
 HEALTHCHECK --timeout=10s CMD curl --silent --fail http://127.0.0.1:8088/healthcheck
 
-CMD ["./metrics", "-p", "8855", "-interval", "30", "-mcAddress", "0.0.0.0", "-mcPort", "25565"]
+CMD ["./metrics", "-p", "8855", "-interval", "30", "-mcAddress", "172.124.30.1", "-mcPort", "25565"]
