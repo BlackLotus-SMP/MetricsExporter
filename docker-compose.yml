@@ -1,0 +1,45 @@
+version: '3'
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: monitoring_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - metrics_exporter
+    networks:
+      monitor_prom:
+        ipv4_address: 172.124.30.2
+  grafana:
+    image: grafana/grafana:latest
+    container_name: monitoring_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=epicpassword
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    networks:
+      monitor_prom:
+        ipv4_address: 172.124.30.3
+  metrics_exporter:
+    image: exporter
+    container_name: exporter
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      monitor_prom:
+        ipv4_address: 172.124.30.4
+networks:
+  monitor_prom:
+    ipam:
+      config:
+        - subnet: 172.124.30.0/24
+          gateway: 172.124.30.1
