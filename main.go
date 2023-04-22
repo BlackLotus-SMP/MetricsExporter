@@ -10,7 +10,7 @@ import (
 
 func main() {
 	var port = flag.String("p", "8462", "Service port")
-	var interval = flag.Int("interval", 5, "Every how many seconds the service will collect metrics from the minecraft server")
+	var interval = flag.Int("interval", 30, "Every how many seconds the service will collect metrics from the minecraft server")
 	var serverAddress = flag.String("mcAddress", "127.0.0.1", "The minecraft server address (just ip/dns)")
 	var serverPort = flag.Uint("mcPort", 25565, "The minecraft server port")
 	flag.Parse()
