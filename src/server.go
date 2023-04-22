@@ -2,6 +2,7 @@ package src
 
 import (
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"metrics-exporter/src/logger"
 	"net/http"
 )
@@ -10,12 +11,12 @@ type Server struct {
 	mux *http.ServeMux
 }
 
-func NewServer() *Server {
+func NewServer(promReg *prometheus.Registry) *Server {
 	server := new(Server)
 	mux := http.NewServeMux()
 	server.mux = mux
 	routes := Loader{}
-	for _, route := range routes.Load() {
+	for _, route := range routes.Load(promReg) {
 		route.Route(server.mux)
 	}
 	return server

@@ -3,6 +3,7 @@ package minecraft
 import (
 	"context"
 	"encoding/json"
+	"github.com/prometheus/client_golang/prometheus"
 	"metrics-exporter/src/logger"
 	"metrics-exporter/src/minecraft/packet"
 	"sync"
@@ -20,15 +21,17 @@ type Listener struct {
 	mcAddr   string
 	mcPort   uint
 	metrics  *Response
+	updater  *MetricUpdater
 }
 
-func NewMCMetricsListener(interval int, mcAddr string, mcPort uint) *Listener {
+func NewMCMetricsListener(interval int, mcAddr string, mcPort uint, promReg *prometheus.Registry) *Listener {
 	listener := new(Listener)
 	listener.log = logger.NewColorLogger("MinecraftMetrics")
 	listener.lock = &sync.Mutex{}
 	listener.interval = interval
 	listener.mcAddr = mcAddr
 	listener.mcPort = mcPort
+	listener.updater = NewMetricUpdater(promReg)
 	return listener
 }
 
@@ -101,6 +104,7 @@ func (l *Listener) collect() {
 	}
 	l.lock.Lock()
 	l.metrics = &metrics
+	l.updater.update(metrics)
 	l.lock.Unlock()
 }
 
