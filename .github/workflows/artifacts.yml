@@ -1,0 +1,39 @@
+name: artifacts
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Set Up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20
+          check-latest: true
+          cache: true
+      - name: Set Up UPX
+        uses: crazy-max/ghaction-upx@v2
+        with:
+          version: latest
+      - name: Dependencies
+        run: go get -d -v ./...
+      - name: Install
+        run: go install -v ./...
+      - name: Make Build Script Executable
+        if: ${{ runner.os != 'Windows' }}
+        run: chmod +x ./build.sh
+      - name: Build
+        run: ./build.sh
+      - name: Capture Artifacts
+        if: ${{ runner.os == 'Linux' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Artifacts
+          path: build/
