@@ -12,7 +12,9 @@ type MetricUpdater struct {
 	ramUsage          *prometheus.GaugeVec
 	tpsAverage        *prometheus.GaugeVec
 	players           *prometheus.GaugeVec
+	entities          *prometheus.GaugeVec
 	onlinePlayersUUID []string
+	loadedEntities    map[string][]string
 }
 
 func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
@@ -59,9 +61,17 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 		prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "players",
-			Help:      "General information about players",
+			Help:      "information about players",
 		},
 		[]string{"name", "uuid", "dimension", "x", "y", "z"},
+	)
+	entities := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "entities",
+			Help:      "count of entities per dimension",
+		},
+		[]string{"name", "dimension"},
 	)
 	mu := new(MetricUpdater)
 	mu.version = versionMetric
@@ -70,6 +80,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	mu.ramUsage = ramUsage
 	mu.tpsAverage = tpsAverage
 	mu.players = players
+	mu.entities = entities
 
 	registry.MustRegister(versionMetric)
 	registry.MustRegister(onlinePlayers)
@@ -77,6 +88,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	registry.MustRegister(ramUsage)
 	registry.MustRegister(tpsAverage)
 	registry.MustRegister(players)
+	registry.MustRegister(entities)
 
 	return mu
 }
@@ -91,6 +103,7 @@ func (mu *MetricUpdater) update(metrics Response) {
 	mu.tpsAverage.With(prometheus.Labels{"time": "30s"}).Set(metrics.Tps.ThirtySec)
 	mu.tpsAverage.With(prometheus.Labels{"time": "1m"}).Set(metrics.Tps.OneMin)
 	mu.playerMetrics(metrics)
+	mu.entitiesMetrics(metrics)
 }
 
 func (mu *MetricUpdater) playerMetrics(metrics Response) {
@@ -99,7 +112,7 @@ func (mu *MetricUpdater) playerMetrics(metrics Response) {
 		nowOnline[p.UUID] = true
 	}
 	for _, uuid := range mu.onlinePlayersUUID {
-		if connected := nowOnline[uuid]; !connected {
+		if !nowOnline[uuid] {
 			mu.players.DeletePartialMatch(prometheus.Labels{"uuid": uuid})
 		}
 	}
@@ -115,5 +128,38 @@ func (mu *MetricUpdater) playerMetrics(metrics Response) {
 			"z":         fmt.Sprintf("%f", player.Z),
 		}).Set(1)
 		mu.onlinePlayersUUID = append(mu.onlinePlayersUUID, player.UUID)
+	}
+}
+
+func (mu *MetricUpdater) entitiesMetrics(metrics Response) {
+	currentEntities := make(map[string]map[string]bool)
+	for _, dimEntities := range metrics.DimEntities {
+		if currentEntities[dimEntities.Dim] == nil {
+			currentEntities[dimEntities.Dim] = make(map[string]bool)
+		}
+		for _, entity := range dimEntities.Entities {
+			currentEntities[dimEntities.Dim][entity.EntityName] = true
+		}
+	}
+	for dimension, entityList := range mu.loadedEntities {
+		if currentEntities[dimension] == nil {
+			mu.entities.Delete(prometheus.Labels{"dimension": dimension})
+		}
+		for _, entity := range entityList {
+			if !currentEntities[dimension][entity] {
+				mu.entities.DeletePartialMatch(prometheus.Labels{"name": entity, "dimension": dimension})
+			}
+		}
+	}
+	mu.loadedEntities = make(map[string][]string)
+	for _, dimEntities := range metrics.DimEntities {
+		if mu.loadedEntities[dimEntities.Dim] == nil {
+			mu.loadedEntities[dimEntities.Dim] = make([]string, 0)
+		}
+		for _, e := range dimEntities.Entities {
+			mu.entities.DeletePartialMatch(prometheus.Labels{"name": e.EntityName, "dimension": dimEntities.Dim})
+			mu.entities.With(prometheus.Labels{"name": e.EntityName, "dimension": dimEntities.Dim}).Set(e.Amount)
+			mu.loadedEntities[dimEntities.Dim] = append(mu.loadedEntities[dimEntities.Dim], e.EntityName)
+		}
 	}
 }

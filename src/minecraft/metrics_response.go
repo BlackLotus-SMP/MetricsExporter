@@ -1,11 +1,12 @@
 package minecraft
 
 type Response struct {
-	Version string   `json:"version"`
-	Mspt    float64  `json:"mspt"`
-	Tps     TPS      `json:"tps"`
-	Players []Player `json:"players"`
-	Ram     RAM      `json:"ram"`
+	Version     string           `json:"version"`
+	Mspt        float64          `json:"mspt"`
+	Tps         TPS              `json:"tps"`
+	Players     []Player         `json:"players"`
+	Ram         RAM              `json:"ram"`
+	DimEntities []EntitiesPerDim `json:"entities"`
 }
 
 type TPS struct {
@@ -26,4 +27,14 @@ type Player struct {
 type RAM struct {
 	Used float64 `json:"used"`
 	Max  float64 `json:"max"`
+}
+
+type EntitiesPerDim struct {
+	Dim      string        `json:"dim"`
+	Entities []EntityCount `json:"entities"`
+}
+
+type EntityCount struct {
+	EntityName string  `json:"name"`
+	Amount     float64 `json:"amount"`
 }
