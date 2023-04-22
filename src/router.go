@@ -1,22 +1,20 @@
 package src
 
 import (
-	"github.com/gin-gonic/gin"
 	"metrics-exporter/src/endpoints"
-	"metrics-exporter/src/minecraft"
+	"net/http"
 )
 
 type Router interface {
-	Route(engine *gin.Engine)
+	Route(engine *http.ServeMux)
 }
 
 type Loader struct {
-	Metrics minecraft.MCMetrics
 }
 
 func (l *Loader) Load() []Router {
 	healthcheck := new(endpoints.HealthCheck)
-	metrics := &endpoints.Metrics{Metrics: l.Metrics}
+	metrics := &endpoints.Metrics{}
 	return []Router{
 		healthcheck,
 		metrics,

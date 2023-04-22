@@ -1,15 +1,14 @@
 package endpoints
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type HealthCheck struct {
 }
 
-func (h HealthCheck) Route(engine *gin.Engine) {
-	engine.GET("/healthcheck", func(context *gin.Context) {
-		context.String(http.StatusOK, "")
+func (h HealthCheck) Route(mux *http.ServeMux) {
+	mux.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
 	})
 }

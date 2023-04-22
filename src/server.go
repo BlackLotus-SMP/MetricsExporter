@@ -2,25 +2,21 @@ package src
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"log"
 	"metrics-exporter/src/logger"
-	"metrics-exporter/src/minecraft"
+	"net/http"
 )
 
 type Server struct {
-	engine *gin.Engine
+	mux *http.ServeMux
 }
 
-func NewServer(metrics minecraft.MCMetrics) *Server {
+func NewServer() *Server {
 	server := new(Server)
-	gin.SetMode(gin.ReleaseMode)
-	engine := gin.New()
-	engine.Use(gin.LoggerWithWriter(gin.DefaultWriter, "/healthcheck"), gin.Recovery())
-	server.engine = engine
-	routes := Loader{metrics}
+	mux := http.NewServeMux()
+	server.mux = mux
+	routes := Loader{}
 	for _, route := range routes.Load() {
-		route.Route(server.engine)
+		route.Route(server.mux)
 	}
 	return server
 }
@@ -28,12 +24,5 @@ func NewServer(metrics minecraft.MCMetrics) *Server {
 func (s *Server) Start(port string) {
 	logg := logger.NewColorLogger("API")
 	logg.Info("Listening on 0.0.0.0:%s", port)
-	err := s.engine.Run(fmt.Sprintf("0.0.0.0:%s", port))
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func (s *Server) GetRouter() *gin.Engine {
-	return s.engine
+	panic(http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), s.mux))
 }
