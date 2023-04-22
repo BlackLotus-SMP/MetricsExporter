@@ -88,7 +88,7 @@ func (mu *MetricUpdater) update(metrics Response) {
 	mu.ramUsage.With(prometheus.Labels{"data": "max"}).Set(metrics.Ram.Max)
 	mu.ramUsage.With(prometheus.Labels{"data": "used"}).Set(metrics.Ram.Used)
 	mu.tpsAverage.With(prometheus.Labels{"time": "5s"}).Set(metrics.Tps.FiveSec)
-	mu.tpsAverage.With(prometheus.Labels{"time": "10s"}).Set(metrics.Tps.TenSec)
+	mu.tpsAverage.With(prometheus.Labels{"time": "30s"}).Set(metrics.Tps.ThirtySec)
 	mu.tpsAverage.With(prometheus.Labels{"time": "1m"}).Set(metrics.Tps.OneMin)
 	mu.playerMetrics(metrics)
 }

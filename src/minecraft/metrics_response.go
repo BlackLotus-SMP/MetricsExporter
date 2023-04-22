@@ -9,9 +9,9 @@ type Response struct {
 }
 
 type TPS struct {
-	FiveSec float64 `json:"5s"`
-	TenSec  float64 `json:"10s"`
-	OneMin  float64 `json:"1m"`
+	FiveSec   float64 `json:"5s"`
+	ThirtySec float64 `json:"30s"`
+	OneMin    float64 `json:"1m"`
 }
 
 type Player struct {
