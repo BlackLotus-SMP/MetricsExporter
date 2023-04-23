@@ -8,6 +8,7 @@ type Response struct {
 	Ram              RAM                   `json:"ram"`
 	DimEntities      []EntitiesPerDim      `json:"entities"`
 	DimBlockEntities []BlockEntitiesPerDim `json:"block_entities"`
+	DimChunks        []ChunksPerDim        `json:"chunks"`
 }
 
 type TPS struct {
@@ -41,6 +42,11 @@ type BlockEntitiesPerDim struct {
 }
 
 type GenericCount struct {
-	Name   string  `json:"name"`
-	Amount float64 `json:"amount"`
+	Name  string  `json:"name"`
+	Count float64 `json:"count"`
+}
+
+type ChunksPerDim struct {
+	Dim   string  `json:"dim"`
+	Count float64 `json:"count"`
 }

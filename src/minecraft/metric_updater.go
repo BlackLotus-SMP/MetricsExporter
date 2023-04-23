@@ -14,9 +14,11 @@ type MetricUpdater struct {
 	players             *prometheus.GaugeVec
 	entities            *prometheus.GaugeVec
 	blockEntities       *prometheus.GaugeVec
+	chunks              *prometheus.GaugeVec
 	onlinePlayersUUID   []string
 	loadedEntities      map[string][]string
 	loadedBlockEntities map[string][]string
+	loadedChunks        []string
 }
 
 func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
@@ -83,6 +85,14 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 		},
 		[]string{"name", "dimension"},
 	)
+	chunks := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "chunks",
+			Help:      "count of chunks per dimension",
+		},
+		[]string{"dimension"},
+	)
 	mu := new(MetricUpdater)
 	mu.version = versionMetric
 	mu.onlinePlayers = onlinePlayers
@@ -92,6 +102,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	mu.players = players
 	mu.entities = entities
 	mu.blockEntities = blockEntities
+	mu.chunks = chunks
 
 	registry.MustRegister(versionMetric)
 	registry.MustRegister(onlinePlayers)
@@ -101,12 +112,13 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	registry.MustRegister(players)
 	registry.MustRegister(entities)
 	registry.MustRegister(blockEntities)
+	registry.MustRegister(chunks)
 
 	return mu
 }
 
 func (mu *MetricUpdater) update(metrics Response) {
-	mu.version.With(prometheus.Labels{"version": metrics.Version})
+	mu.version.With(prometheus.Labels{"version": metrics.Version}).Set(1)
 	mu.onlinePlayers.Set(float64(len(metrics.Players)))
 	mu.mspt.Set(metrics.Mspt)
 	mu.ramUsage.With(prometheus.Labels{"data": "max"}).Set(metrics.Ram.Max)
@@ -117,6 +129,7 @@ func (mu *MetricUpdater) update(metrics Response) {
 	mu.playerMetrics(metrics)
 	mu.entitiesMetrics(metrics)
 	mu.blockEntitiesMetrics(metrics)
+	mu.chunkMetrics(metrics)
 }
 
 func (mu *MetricUpdater) playerMetrics(metrics Response) {
@@ -141,6 +154,24 @@ func (mu *MetricUpdater) playerMetrics(metrics Response) {
 			"z":         fmt.Sprintf("%f", player.Z),
 		}).Set(1)
 		mu.onlinePlayersUUID = append(mu.onlinePlayersUUID, player.UUID)
+	}
+}
+
+func (mu *MetricUpdater) chunkMetrics(metrics Response) {
+	currentChunks := make(map[string]bool)
+	for _, c := range metrics.DimChunks {
+		currentChunks[c.Dim] = true
+	}
+	for _, dim := range mu.loadedChunks {
+		if !currentChunks[dim] {
+			mu.chunks.Delete(prometheus.Labels{"dimension": dim})
+		}
+	}
+	mu.loadedChunks = make([]string, 0)
+	for _, c := range metrics.DimChunks {
+		mu.chunks.DeletePartialMatch(prometheus.Labels{"dimension": c.Dim})
+		mu.chunks.With(prometheus.Labels{"dimension": c.Dim}).Set(c.Count)
+		mu.loadedChunks = append(mu.loadedChunks, c.Dim)
 	}
 }
 
@@ -171,7 +202,7 @@ func (mu *MetricUpdater) blockEntitiesMetrics(metrics Response) {
 		}
 		for _, blockEntity := range dimBlockEntities.BlockEntities {
 			mu.blockEntities.DeletePartialMatch(prometheus.Labels{"name": blockEntity.Name, "dimension": dimBlockEntities.Dim})
-			mu.blockEntities.With(prometheus.Labels{"name": blockEntity.Name, "dimension": dimBlockEntities.Dim}).Set(blockEntity.Amount)
+			mu.blockEntities.With(prometheus.Labels{"name": blockEntity.Name, "dimension": dimBlockEntities.Dim}).Set(blockEntity.Count)
 			mu.loadedBlockEntities[dimBlockEntities.Dim] = append(mu.loadedBlockEntities[dimBlockEntities.Dim], blockEntity.Name)
 		}
 	}
@@ -204,7 +235,7 @@ func (mu *MetricUpdater) entitiesMetrics(metrics Response) {
 		}
 		for _, entity := range dimEntities.Entities {
 			mu.entities.DeletePartialMatch(prometheus.Labels{"name": entity.Name, "dimension": dimEntities.Dim})
-			mu.entities.With(prometheus.Labels{"name": entity.Name, "dimension": dimEntities.Dim}).Set(entity.Amount)
+			mu.entities.With(prometheus.Labels{"name": entity.Name, "dimension": dimEntities.Dim}).Set(entity.Count)
 			mu.loadedEntities[dimEntities.Dim] = append(mu.loadedEntities[dimEntities.Dim], entity.Name)
 		}
 	}
