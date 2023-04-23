@@ -6,15 +6,17 @@ import (
 )
 
 type MetricUpdater struct {
-	version           *prometheus.GaugeVec
-	onlinePlayers     prometheus.Gauge
-	mspt              prometheus.Gauge
-	ramUsage          *prometheus.GaugeVec
-	tpsAverage        *prometheus.GaugeVec
-	players           *prometheus.GaugeVec
-	entities          *prometheus.GaugeVec
-	onlinePlayersUUID []string
-	loadedEntities    map[string][]string
+	version             *prometheus.GaugeVec
+	onlinePlayers       prometheus.Gauge
+	mspt                prometheus.Gauge
+	ramUsage            *prometheus.GaugeVec
+	tpsAverage          *prometheus.GaugeVec
+	players             *prometheus.GaugeVec
+	entities            *prometheus.GaugeVec
+	blockEntities       *prometheus.GaugeVec
+	onlinePlayersUUID   []string
+	loadedEntities      map[string][]string
+	loadedBlockEntities map[string][]string
 }
 
 func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
@@ -73,6 +75,14 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 		},
 		[]string{"name", "dimension"},
 	)
+	blockEntities := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "block_entities",
+			Help:      "count of block entities per dimension",
+		},
+		[]string{"name", "dimension"},
+	)
 	mu := new(MetricUpdater)
 	mu.version = versionMetric
 	mu.onlinePlayers = onlinePlayers
@@ -81,6 +91,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	mu.tpsAverage = tpsAverage
 	mu.players = players
 	mu.entities = entities
+	mu.blockEntities = blockEntities
 
 	registry.MustRegister(versionMetric)
 	registry.MustRegister(onlinePlayers)
@@ -89,6 +100,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	registry.MustRegister(tpsAverage)
 	registry.MustRegister(players)
 	registry.MustRegister(entities)
+	registry.MustRegister(blockEntities)
 
 	return mu
 }
@@ -104,6 +116,7 @@ func (mu *MetricUpdater) update(metrics Response) {
 	mu.tpsAverage.With(prometheus.Labels{"time": "1m"}).Set(metrics.Tps.OneMin)
 	mu.playerMetrics(metrics)
 	mu.entitiesMetrics(metrics)
+	mu.blockEntitiesMetrics(metrics)
 }
 
 func (mu *MetricUpdater) playerMetrics(metrics Response) {
@@ -131,6 +144,39 @@ func (mu *MetricUpdater) playerMetrics(metrics Response) {
 	}
 }
 
+func (mu *MetricUpdater) blockEntitiesMetrics(metrics Response) {
+	currentBlockEntities := make(map[string]map[string]bool)
+	for _, dimBlockEntities := range metrics.DimBlockEntities {
+		if currentBlockEntities[dimBlockEntities.Dim] == nil {
+			currentBlockEntities[dimBlockEntities.Dim] = make(map[string]bool)
+		}
+		for _, blockEntity := range dimBlockEntities.BlockEntities {
+			currentBlockEntities[dimBlockEntities.Dim][blockEntity.Name] = true
+		}
+	}
+	for dimension, blockEntityList := range mu.loadedBlockEntities {
+		if currentBlockEntities[dimension] == nil {
+			mu.blockEntities.Delete(prometheus.Labels{"dimension": dimension})
+		}
+		for _, blockEntity := range blockEntityList {
+			if !currentBlockEntities[dimension][blockEntity] {
+				mu.blockEntities.DeletePartialMatch(prometheus.Labels{"name": blockEntity, "dimension": dimension})
+			}
+		}
+	}
+	mu.loadedBlockEntities = make(map[string][]string)
+	for _, dimBlockEntities := range metrics.DimBlockEntities {
+		if mu.loadedBlockEntities[dimBlockEntities.Dim] == nil {
+			mu.loadedBlockEntities[dimBlockEntities.Dim] = make([]string, 0)
+		}
+		for _, blockEntity := range dimBlockEntities.BlockEntities {
+			mu.blockEntities.DeletePartialMatch(prometheus.Labels{"name": blockEntity.Name, "dimension": dimBlockEntities.Dim})
+			mu.blockEntities.With(prometheus.Labels{"name": blockEntity.Name, "dimension": dimBlockEntities.Dim}).Set(blockEntity.Amount)
+			mu.loadedBlockEntities[dimBlockEntities.Dim] = append(mu.loadedBlockEntities[dimBlockEntities.Dim], blockEntity.Name)
+		}
+	}
+}
+
 func (mu *MetricUpdater) entitiesMetrics(metrics Response) {
 	currentEntities := make(map[string]map[string]bool)
 	for _, dimEntities := range metrics.DimEntities {
@@ -138,7 +184,7 @@ func (mu *MetricUpdater) entitiesMetrics(metrics Response) {
 			currentEntities[dimEntities.Dim] = make(map[string]bool)
 		}
 		for _, entity := range dimEntities.Entities {
-			currentEntities[dimEntities.Dim][entity.EntityName] = true
+			currentEntities[dimEntities.Dim][entity.Name] = true
 		}
 	}
 	for dimension, entityList := range mu.loadedEntities {
@@ -156,10 +202,10 @@ func (mu *MetricUpdater) entitiesMetrics(metrics Response) {
 		if mu.loadedEntities[dimEntities.Dim] == nil {
 			mu.loadedEntities[dimEntities.Dim] = make([]string, 0)
 		}
-		for _, e := range dimEntities.Entities {
-			mu.entities.DeletePartialMatch(prometheus.Labels{"name": e.EntityName, "dimension": dimEntities.Dim})
-			mu.entities.With(prometheus.Labels{"name": e.EntityName, "dimension": dimEntities.Dim}).Set(e.Amount)
-			mu.loadedEntities[dimEntities.Dim] = append(mu.loadedEntities[dimEntities.Dim], e.EntityName)
+		for _, entity := range dimEntities.Entities {
+			mu.entities.DeletePartialMatch(prometheus.Labels{"name": entity.Name, "dimension": dimEntities.Dim})
+			mu.entities.With(prometheus.Labels{"name": entity.Name, "dimension": dimEntities.Dim}).Set(entity.Amount)
+			mu.loadedEntities[dimEntities.Dim] = append(mu.loadedEntities[dimEntities.Dim], entity.Name)
 		}
 	}
 }
