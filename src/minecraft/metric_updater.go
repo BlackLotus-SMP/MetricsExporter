@@ -15,6 +15,7 @@ type MetricUpdater struct {
 	entities            *prometheus.GaugeVec
 	blockEntities       *prometheus.GaugeVec
 	chunks              *prometheus.GaugeVec
+	dimensions          *prometheus.GaugeVec
 	onlinePlayersUUID   []string
 	loadedEntities      map[string][]string
 	loadedBlockEntities map[string][]string
@@ -93,6 +94,14 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 		},
 		[]string{"dimension"},
 	)
+	dimensions := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "dimensions",
+			Help:      "list of dimensions",
+		},
+		[]string{"name"},
+	)
 	mu := new(MetricUpdater)
 	mu.version = versionMetric
 	mu.onlinePlayers = onlinePlayers
@@ -103,6 +112,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	mu.entities = entities
 	mu.blockEntities = blockEntities
 	mu.chunks = chunks
+	mu.dimensions = dimensions
 
 	registry.MustRegister(versionMetric)
 	registry.MustRegister(onlinePlayers)
@@ -113,6 +123,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	registry.MustRegister(entities)
 	registry.MustRegister(blockEntities)
 	registry.MustRegister(chunks)
+	registry.MustRegister(dimensions)
 
 	return mu
 }
@@ -130,6 +141,9 @@ func (mu *MetricUpdater) update(metrics Response) {
 	mu.entitiesMetrics(metrics)
 	mu.blockEntitiesMetrics(metrics)
 	mu.chunkMetrics(metrics)
+	for _, dimension := range metrics.Dimensions {
+		mu.dimensions.With(prometheus.Labels{"name": dimension}).Set(1)
+	}
 }
 
 func (mu *MetricUpdater) playerMetrics(metrics Response) {

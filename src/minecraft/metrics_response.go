@@ -9,6 +9,7 @@ type Response struct {
 	DimEntities      []EntitiesPerDim      `json:"entities"`
 	DimBlockEntities []BlockEntitiesPerDim `json:"block_entities"`
 	DimChunks        []ChunksPerDim        `json:"chunks"`
+	Dimensions       []string              `json:"dimensions"`
 }
 
 type TPS struct {
