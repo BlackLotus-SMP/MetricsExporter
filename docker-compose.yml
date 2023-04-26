@@ -14,8 +14,11 @@ services:
       monitor_prom:
         ipv4_address: 172.124.30.2
   grafana:
-    image: grafana/grafana:latest
+    image: grafana
     container_name: monitoring_grafana
+    build:
+      context: .
+      dockerfile: DockerfileGrafana
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -32,7 +35,7 @@ services:
     container_name: exporter
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: DockerfileMetrics
     restart: unless-stopped
     networks:
       monitor_prom:
