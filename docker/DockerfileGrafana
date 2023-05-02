@@ -11,6 +11,6 @@ RUN echo $'apiVersion: 1\n\n\
       url: http://prometheus:9090\n\
       isDefault: true\n\
       version: 1\n\
-      editable: false' > /etc/grafana/provisioning/datasources/default.yml \
+      editable: false' > /etc/grafana/provisioning/datasources/default.yml
 
 USER grafana
