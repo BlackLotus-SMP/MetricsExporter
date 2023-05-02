@@ -31,7 +31,7 @@ And access grafana on `http://<your-ip>:3050`
 
 Default user: **admin**
 
-Default pass: **whatever you set on Configure grafana**
+Default pass: **whatever you set on [Configure grafana](https://github.com/BlackLotus-SMP/MetricsExporter/blob/master/docs/README.md#configure-grafana)**
 
 ## Import the dashboard
 
