@@ -4,6 +4,10 @@
 
 Simple exporter for the minecraft metrics protocol mod: https://github.com/BlackLotus-SMP/metrics-protocol
 
+## Docker deploy
+
+**You can find the docs on how to deploy the service [here](https://github.com/BlackLotus-SMP/MetricsExporter/blob/master/docs/README.md).**
+
 ## Start
 
 ```bash

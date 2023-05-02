@@ -1,0 +1,16 @@
+FROM grafana/grafana:latest
+
+USER root
+
+RUN echo $'apiVersion: 1\n\n\
+    datasources:\n\
+    - name: prometheus\n\
+      type: prometheus\n\
+      access: direct\n\
+      orgId: 1\n\
+      url: http://prometheus:9090\n\
+      isDefault: true\n\
+      version: 1\n\
+      editable: false\n\' > /etc/grafana/provisioning/datasources/default.yml \
+
+USER grafana

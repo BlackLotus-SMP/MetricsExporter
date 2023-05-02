@@ -5,9 +5,7 @@ services:
     container_name: monitoring_prometheus
     restart: unless-stopped
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
       - metrics_exporter
     networks:
@@ -18,10 +16,10 @@ services:
     container_name: monitoring_grafana
     build:
       context: .
-      dockerfile: DockerfileGrafana
+      dockerfile: docker/DockerfileGrafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3050:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=epicpassword
       - GF_USERS_ALLOW_SIGN_UP=false
@@ -35,7 +33,7 @@ services:
     container_name: exporter
     build:
       context: .
-      dockerfile: DockerfileMetrics
+      dockerfile: docker/DockerfileMetrics
     restart: unless-stopped
     networks:
       monitor_prom:
