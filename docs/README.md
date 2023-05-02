@@ -18,7 +18,7 @@ Modify the [prometheus yaml](https://github.com/BlackLotus-SMP/MetricsExporter/b
 
 ### Configure grafana
 
-Modify the [docker compose](https://github.com/BlackLotus-SMP/MetricsExporter/blob/master/docker-compose.yml#L26) and set your own secure password for the admin user.
+Modify the [docker compose](https://github.com/BlackLotus-SMP/MetricsExporter/blob/master/docker-compose.yml#L24) and set your own secure password for the admin user.
 
 ## Run the service
 
