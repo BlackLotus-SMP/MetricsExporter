@@ -3,6 +3,8 @@ package minecraft
 type Response struct {
 	Version          string                `json:"version"`
 	Mspt             float64               `json:"mspt"`
+	Day              float64               `json:"day"`
+	Uptime           string                `json:"time_started"`
 	Tps              TPS                   `json:"tps"`
 	Players          []Player              `json:"players"`
 	Ram              RAM                   `json:"ram"`

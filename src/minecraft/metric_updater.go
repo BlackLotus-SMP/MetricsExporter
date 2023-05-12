@@ -9,6 +9,7 @@ type MetricUpdater struct {
 	version             *prometheus.GaugeVec
 	onlinePlayers       prometheus.Gauge
 	mspt                prometheus.Gauge
+	day                 prometheus.Gauge
 	ramUsage            *prometheus.GaugeVec
 	tpsAverage          *prometheus.GaugeVec
 	players             *prometheus.GaugeVec
@@ -102,10 +103,18 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 		},
 		[]string{"name"},
 	)
+	day := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "day",
+			Help:      "minecraft day",
+		},
+	)
 	mu := new(MetricUpdater)
 	mu.version = versionMetric
 	mu.onlinePlayers = onlinePlayers
 	mu.mspt = mspt
+	mu.day = day
 	mu.ramUsage = ramUsage
 	mu.tpsAverage = tpsAverage
 	mu.players = players
@@ -117,6 +126,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	registry.MustRegister(versionMetric)
 	registry.MustRegister(onlinePlayers)
 	registry.MustRegister(mspt)
+	registry.MustRegister(day)
 	registry.MustRegister(ramUsage)
 	registry.MustRegister(tpsAverage)
 	registry.MustRegister(players)
@@ -132,6 +142,7 @@ func (mu *MetricUpdater) update(metrics Response) {
 	mu.version.With(prometheus.Labels{"version": metrics.Version}).Set(1)
 	mu.onlinePlayers.Set(float64(len(metrics.Players)))
 	mu.mspt.Set(metrics.Mspt)
+	mu.day.Set(metrics.Day)
 	mu.ramUsage.With(prometheus.Labels{"data": "max"}).Set(metrics.Ram.Max)
 	mu.ramUsage.With(prometheus.Labels{"data": "used"}).Set(metrics.Ram.Used)
 	mu.tpsAverage.With(prometheus.Labels{"time": "5s"}).Set(metrics.Tps.FiveSec)
