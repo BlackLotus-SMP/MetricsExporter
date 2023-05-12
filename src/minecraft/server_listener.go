@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/prometheus/client_golang/prometheus"
-	"log"
 	"metrics-exporter/src/logger"
 	"metrics-exporter/src/minecraft/packet"
 	"sync"
@@ -104,7 +103,6 @@ func (l *Listener) collect() {
 		return
 	}
 	l.lock.Lock()
-	log.Printf("%#v", metrics)
 	l.metrics = &metrics
 	l.updater.update(metrics)
 	l.lock.Unlock()

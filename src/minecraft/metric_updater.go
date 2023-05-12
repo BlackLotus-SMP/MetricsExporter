@@ -17,6 +17,7 @@ type MetricUpdater struct {
 	blockEntities       *prometheus.GaugeVec
 	chunks              *prometheus.GaugeVec
 	dimensions          *prometheus.GaugeVec
+	uptime              *prometheus.GaugeVec
 	onlinePlayersUUID   []string
 	loadedEntities      map[string][]string
 	loadedBlockEntities map[string][]string
@@ -110,6 +111,14 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 			Help:      "minecraft day",
 		},
 	)
+	uptime := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "uptime",
+			Help:      "timestamp the server has been running",
+		},
+		[]string{"timestamp"},
+	)
 	mu := new(MetricUpdater)
 	mu.version = versionMetric
 	mu.onlinePlayers = onlinePlayers
@@ -122,6 +131,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	mu.blockEntities = blockEntities
 	mu.chunks = chunks
 	mu.dimensions = dimensions
+	mu.uptime = uptime
 
 	registry.MustRegister(versionMetric)
 	registry.MustRegister(onlinePlayers)
@@ -134,6 +144,7 @@ func NewMetricUpdater(registry *prometheus.Registry) *MetricUpdater {
 	registry.MustRegister(blockEntities)
 	registry.MustRegister(chunks)
 	registry.MustRegister(dimensions)
+	registry.MustRegister(uptime)
 
 	return mu
 }
@@ -148,6 +159,7 @@ func (mu *MetricUpdater) update(metrics Response) {
 	mu.tpsAverage.With(prometheus.Labels{"time": "5s"}).Set(metrics.Tps.FiveSec)
 	mu.tpsAverage.With(prometheus.Labels{"time": "30s"}).Set(metrics.Tps.ThirtySec)
 	mu.tpsAverage.With(prometheus.Labels{"time": "1m"}).Set(metrics.Tps.OneMin)
+	mu.uptime.With(prometheus.Labels{"timestamp": metrics.Uptime}).Set(1)
 	mu.playerMetrics(metrics)
 	mu.entitiesMetrics(metrics)
 	mu.blockEntitiesMetrics(metrics)
