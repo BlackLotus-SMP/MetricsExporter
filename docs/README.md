@@ -39,7 +39,7 @@ Default pass: **whatever you set on [Configure grafana](https://github.com/Black
 
 ![create](create_dashboard.png)
 
-- Import the dashboard with id: **18653**
+- Import the dashboard with id: **18730**
 
 ![import](import_dashboard.png)
 
