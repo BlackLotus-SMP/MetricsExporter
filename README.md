@@ -26,6 +26,10 @@ Simple exporter for the minecraft metrics protocol mod: https://github.com/Black
     - **port of the mc server**
     - **default** = 25565
 
+## Grafana
+
+Find the grafana dashboard here: https://grafana.com/grafana/dashboards/18730-fabric-minecraft-metrics/
+
 ## Endpoints
 
 ### Metrics
